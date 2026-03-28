@@ -16,7 +16,11 @@
     font-family: sans-serif;
   }
   video {
-    display: none;
+    border: 3px solid #fff;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    width: 320px;
+    height: 240px;
   }
   .card {
     width: 300px;
@@ -37,7 +41,7 @@
     transform: scale(1);
   }
   .hint {
-    margin-top: 20px;
+    margin-top: 10px;
     font-size: 16px;
     color: #ccc;
   }
@@ -45,14 +49,14 @@
 </head>
 <body>
 
-<video id="webcam" autoplay playsinline width="320" height="240"></video>
+<video id="webcam" autoplay muted playsinline></video>
 <div class="card" id="card">🎉 Card Açıldı! 🎉</div>
 <div class="hint">Gül və card açılacaq!</div>
 
-<script src="https://unpkg.com/face-api.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
-  const card = document.getElementById('card');
   const video = document.getElementById('webcam');
+  const card = document.getElementById('card');
 
   async function setupCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -63,7 +67,7 @@
   }
 
   async function loadModels() {
-    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js/weights';
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/weights';
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
     await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
   }
@@ -73,8 +77,10 @@
                                      .withFaceExpressions();
     if (detections.length > 0) {
       const expressions = detections[0].expressions;
-      if (expressions.happy > 0.7) { // Smile threshold
+      if (expressions.happy > 0.6) { // Smile threshold
         card.classList.add('active');
+      } else {
+        card.classList.remove('active'); // Gülüş yoxdursa card gizlənsin
       }
     }
     requestAnimationFrame(detectSmile);
