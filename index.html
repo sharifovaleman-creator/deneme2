@@ -16,7 +16,7 @@
     font-family: sans-serif;
   }
   video {
-    display: none; /* Kamera görünməsin, amma işləyəcək */
+    display: none;
   }
   .card {
     width: 300px;
@@ -45,51 +45,48 @@
 </head>
 <body>
 
-<video id="webcam" autoplay playsinline></video>
+<video id="webcam" autoplay playsinline width="320" height="240"></video>
 <div class="card" id="card">🎉 Card Açıldı! 🎉</div>
-<div class="hint">Gül və card aç!</div>
+<div class="hint">Gül və card açılacaq!</div>
 
-<!-- ml5.js library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ml5/0.12.2/ml5.min.js"></script>
+<script src="https://unpkg.com/face-api.js"></script>
 <script>
   const card = document.getElementById('card');
   const video = document.getElementById('webcam');
 
-  // Kamera icazəsi
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-    })
-    .catch(err => {
-      alert("Kamera icazəsi alınmadı: " + err);
+  async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    return new Promise(resolve => {
+      video.onloadedmetadata = () => resolve(video);
     });
-
-  // Face expression model yüklə
-  let classifier;
-  ml5.faceApi(video, { withLandmarks: true, withExpressions: true, withDescriptors: false }, modelReady);
-
-  function modelReady() {
-    console.log("Model yükləndi!");
-    detect();
   }
 
-  function detect() {
-    ml5.faceApi(video, { withExpressions: true }, model => {
-      model.detect(gotResults);
-    });
-    requestAnimationFrame(detect);
+  async function loadModels() {
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js/weights';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
   }
 
-  function gotResults(err, result) {
-    if (err) { console.error(err); return; }
-    if (result && result.length > 0) {
-      const expressions = result[0].expressions;
-      // Smile threshold 0.7-dən böyük olarsa card aç
-      if (expressions.happy > 0.7) {
+  async function detectSmile() {
+    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+                                     .withFaceExpressions();
+    if (detections.length > 0) {
+      const expressions = detections[0].expressions;
+      if (expressions.happy > 0.7) { // Smile threshold
         card.classList.add('active');
       }
     }
+    requestAnimationFrame(detectSmile);
   }
+
+  async function init() {
+    await setupCamera();
+    await loadModels();
+    detectSmile();
+  }
+
+  init();
 </script>
 
 </body>
